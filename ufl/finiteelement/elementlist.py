@@ -129,7 +129,7 @@ register_element("Kong-Mulder-Veldhuizen", "KMV", 0, H1, "identity", (1, None),
 register_element("Mardal-Tai-Winther", "MTW", 1, H1, "contravariant Piola", (3, 3),
                  ("triangle",))
 register_element("Morley", "MOR", 0, H2, "identity", (2, 2), ("triangle",))
-register_element("WuXu", "WX", 0, H2, "identity", (7, 7), ("triangle",))
+register_element("WuXu Robust H3 Nonconforming", "WXRobH3NC", 0, H2, "identity", (7, 7), ("triangle",))
 # Special elements
 register_element("Boundary Quadrature", "BQ", 0, L2, "identity", (0, None),
                  any_cell)
