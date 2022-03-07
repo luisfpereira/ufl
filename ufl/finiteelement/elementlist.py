@@ -5,20 +5,9 @@ elements by calling the function register_element."""
 
 # Copyright (C) 2008-2016 Martin Sandve Alnæs and Anders Logg
 #
-# This file is part of UFL.
+# This file is part of UFL (https://www.fenicsproject.org)
 #
-# UFL is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFL is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFL. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 #
 # Modified by Marie E. Rognes <meg@simula.no>, 2010
 # Modified by Lizao Li <lzlarryli@gmail.com>, 2015, 2016
@@ -105,8 +94,8 @@ simplices = ("interval", "triangle", "tetrahedron")
 cubes = ("interval", "quadrilateral", "hexahedron")
 any_cell = (None,
             "vertex", "interval",
-            "triangle", "tetrahedron",
-            "quadrilateral", "hexahedron")
+            "triangle", "tetrahedron", "prism",
+            "pyramid", "quadrilateral", "hexahedron")
 
 # Elements in the periodic table # TODO: Register these as aliases of
 # periodic table element description instead of the other way around
@@ -126,7 +115,6 @@ register_element("Raviart-Thomas", "RT", 1, HDiv, "contravariant Piola",
 
 # Elements not in the periodic table
 register_element("Argyris", "ARG", 0, H2, "identity", (5, 5), ("triangle",))
-register_element("Arnold-Winther", "AW", 0, H1, "identity", None, ("triangle",))
 register_element("Bell", "BELL", 0, H2, "identity", (5, 5), ("triangle",))
 register_element("Brezzi-Douglas-Fortin-Marini", "BDFM", 1, HDiv,
                  "contravariant Piola", (1, None), simplices[1:])
@@ -136,7 +124,9 @@ register_element("Crouzeix-Raviart", "CR", 0, L2, "identity", (1, 1),
 register_element("Discontinuous Raviart-Thomas", "DRT", 1, L2,
                  "contravariant Piola", (1, None), simplices[1:])
 register_element("Hermite", "HER", 0, H1, "identity", (3, 3), simplices)
-register_element("Mardal-Tai-Winther", "MTW", 0, H1, "identity", None,
+register_element("Kong-Mulder-Veldhuizen", "KMV", 0, H1, "identity", (1, None),
+                 simplices[1:])
+register_element("Mardal-Tai-Winther", "MTW", 1, H1, "contravariant Piola", (3, 3),
                  ("triangle",))
 register_element("Morley", "MOR", 0, H2, "identity", (2, 2), ("triangle",))
 register_element("WuXu", "WX", 0, H2, "identity", (7, 7), ("triangle",))
@@ -156,6 +146,10 @@ register_element("Regge", "Regge", 2, HEin, "double covariant Piola",
 register_element("HDiv Trace", "HDivT", 0, L2, "identity", (0, None), any_cell)
 register_element("Hellan-Herrmann-Johnson", "HHJ", 2, HDivDiv,
                  "double contravariant Piola", (0, None), ("triangle",))
+register_element("Nonconforming Arnold-Winther", "AWnc", 2, HDivDiv,
+                 "double contravariant Piola", (2, 2), ("triangle", "tetrahedron"))
+register_element("Conforming Arnold-Winther", "AWc", 2, HDivDiv,
+                 "double contravariant Piola", (3, None), ("triangle", "tetrahedron"))
 # Spectral elements.
 register_element("Gauss-Legendre", "GL", 0, L2, "identity", (0, None),
                  ("interval",))
@@ -201,7 +195,7 @@ register_element2("NCF", 1, HDiv, "contravariant Piola", (1, None),
                   ("hexahedron",))
 
 register_element2("S", 0, H1, "identity", (1, None), cubes)
-register_element2("DPC", 0, L2, "identity", (1, None), cubes)
+register_element2("DPC", 0, L2, "identity", (0, None), cubes)
 register_element2("BDMCE", 1, HCurl, "covariant Piola", (1, None),
                   ("quadrilateral",))
 register_element2("BDMCF", 1, HDiv, "contravariant Piola", (1, None),
@@ -233,6 +227,54 @@ register_alias("N2E", lambda family, dim, order,
 register_alias("N2F", lambda family, dim, order,
                degree: ("Brezzi-Douglas-Marini", order))
 
+# discontinuous elements using l2 pullbacks
+register_element2("DPC L2", 0, L2, "L2 Piola", (1, None), cubes)
+register_element2("DQ L2", 0, L2, "L2 Piola", (0, None), cubes)
+register_element("Gauss-Legendre L2", "GL L2", 0, L2, "L2 Piola", (0, None),
+                 ("interval",))
+register_element("Discontinuous Lagrange L2", "DG L2", 0, L2, "L2 Piola", (0, None),
+                 any_cell)  # "DP"
+
+register_alias("DP L2", lambda family, dim, order,
+               degree: ("Discontinuous Lagrange L2", order))
+
+register_alias("P- Lambda L2", lambda family, dim, order,
+               degree: feec_element_l2(family, dim, order, degree))
+register_alias("P Lambda L2", lambda family, dim, order,
+               degree: feec_element_l2(family, dim, order, degree))
+register_alias("Q- Lambda L2", lambda family, dim, order,
+               degree: feec_element_l2(family, dim, order, degree))
+register_alias("S Lambda L2", lambda family, dim, order,
+               degree: feec_element_l2(family, dim, order, degree))
+
+register_alias("P- L2", lambda family, dim, order,
+               degree: feec_element_l2(family, dim, order, degree))
+register_alias("Q- L2", lambda family, dim, order,
+               degree: feec_element_l2(family, dim, order, degree))
+
+# mimetic spectral elements - primal and dual complexs
+register_element("Extended-Gauss-Legendre", "EGL", 0, H1, "identity", (2, None),
+                 ("interval",))
+register_element("Extended-Gauss-Legendre Edge", "EGL-Edge", 0, L2, "identity", (1, None),
+                 ("interval",))
+register_element("Extended-Gauss-Legendre Edge L2", "EGL-Edge L2", 0, L2, "L2 Piola", (1, None),
+                 ("interval",))
+register_element("Gauss-Lobatto-Legendre Edge", "GLL-Edge", 0, L2, "identity", (0, None),
+                 ("interval",))
+register_element("Gauss-Lobatto-Legendre Edge L2", "GLL-Edge L2", 0, L2, "L2 Piola", (0, None),
+                 ("interval",))
+
+# directly-defined serendipity elements ala Arbogast
+# currently the theory is only really worked out for quads.
+register_element("Direct Serendipity", "Sdirect", 0, H1, "physical", (1, None),
+                 ("quadrilateral",))
+register_element("Direct Serendipity Full H(div)", "Sdirect H(div)", 1, HDiv, "physical", (1, None),
+                 ("quadrilateral",))
+register_element("Direct Serendipity Reduced H(div)", "Sdirect H(div) red", 1, HDiv, "physical", (1, None),
+                 ("quadrilateral",))
+
+
+# NOTE- the edge elements for primal mimetic spectral elements are accessed by using variant='mse' in the appropriate places
 
 def feec_element(family, n, r, k):
     """Finite element exterior calculus notation
@@ -274,6 +316,52 @@ def feec_element(family, n, r, k):
     _feec_elements["P"] = _feec_elements["P Lambda"]
     _feec_elements["Q-"] = _feec_elements["Q- Lambda"]
     _feec_elements["S"] = _feec_elements["S Lambda"]
+
+    family, r = _feec_elements[family][n - 1][k]
+
+    return family, r
+
+
+def feec_element_l2(family, n, r, k):
+    """Finite element exterior calculus notation
+    n = topological dimension of domain
+    r = polynomial order
+    k = form_degree"""
+
+    # Note: We always map to edge elements in 2D, don't know how to
+    # differentiate otherwise?
+
+    # Mapping from (feec name, domain dimension, form degree) to
+    # (family name, polynomial order)
+    _feec_elements = {
+        "P- Lambda L2": (
+            (("P", r), ("DP L2", r - 1)),
+            (("P", r), ("RTE", r), ("DP L2", r - 1)),
+            (("P", r), ("N1E", r), ("N1F", r), ("DP L2", r - 1)),
+        ),
+        "P Lambda L2": (
+            (("P", r), ("DP L2", r)),
+            (("P", r), ("BDME", r), ("DP L2", r)),
+            (("P", r), ("N2E", r), ("N2F", r), ("DP L2", r)),
+        ),
+        "Q- Lambda L2": (
+            (("Q", r), ("DQ L2", r - 1)),
+            (("Q", r), ("RTCE", r), ("DQ L2", r - 1)),
+            (("Q", r), ("NCE", r), ("NCF", r), ("DQ L2", r - 1)),
+        ),
+        "S Lambda L2": (
+            (("S", r), ("DPC L2", r)),
+            (("S", r), ("BDMCE", r), ("DPC L2", r)),
+            (("S", r), ("AAE", r), ("AAF", r), ("DPC L2", r)),
+        ),
+    }
+
+    # New notation, old verbose notation (including "Lambda") might be
+    # removed
+    _feec_elements["P- L2"] = _feec_elements["P- Lambda L2"]
+    _feec_elements["P L2"] = _feec_elements["P Lambda L2"]
+    _feec_elements["Q- L2"] = _feec_elements["Q- Lambda L2"]
+    _feec_elements["S L2"] = _feec_elements["S Lambda L2"]
 
     family, r = _feec_elements[family][n - 1][k]
 
@@ -325,6 +413,9 @@ def canonical_element_description(family, cell, order, form_degree):
     if form_degree is not None and family in ("P", "S"):
         family, order = feec_element(family, tdim, order, form_degree)
 
+    if form_degree is not None and family in ("P L2", "S L2"):
+        family, order = feec_element_l2(family, tdim, order, form_degree)
+
     # Check whether this family is an alias for something else
     while family in aliases:
         if tdim is None:
@@ -347,6 +438,10 @@ def canonical_element_description(family, cell, order, form_degree):
             if order >= 1:
                 warning("Discontinuous Lagrange element requested on %s, creating DQ element." % cell.cellname())
             family = "DQ"
+        elif family == "Discontinuous Lagrange L2":
+            if order >= 1:
+                warning("Discontinuous Lagrange L2 element requested on %s, creating DQ L2 element." % cell.cellname())
+            family = "DQ L2"
 
     # Validate cellname if a valid cell is specified
     if not (cellname is None or cellname in cellnames):

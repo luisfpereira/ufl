@@ -7,20 +7,9 @@ of mostly the Jacobian and reference cell data.
 
 # Copyright (C) 2013-2016 Martin Sandve Alnæs
 #
-# This file is part of UFL.
+# This file is part of UFL (https://www.fenicsproject.org)
 #
-# UFL is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFL is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFL. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 
 from functools import reduce
 from itertools import combinations
@@ -48,7 +37,7 @@ from ufl.classes import (Expr, Form, Integral,
 # FacetOrientation, QuadratureWeight,
 
 from ufl.tensors import as_tensor, as_vector
-from ufl.operators import sqrt, max_value, min_value
+from ufl.operators import sqrt, max_value, min_value, conj, real
 
 from ufl.compound_expressions import determinant_expr, cross_expr, inverse_expr
 
@@ -249,7 +238,7 @@ class GeometryLoweringApplier(MultiFunction):
         edges = CellEdgeVectors(domain)
         num_edges = edges.ufl_shape[0]
         j = Index()
-        elen = [sqrt(edges[e, j] * edges[e, j]) for e in range(num_edges)]
+        elen = [real(sqrt(real(edges[e, j] * conj(edges[e, j])))) for e in range(num_edges)]
 
         if cellname == "triangle":
             return (elen[0] * elen[1] * elen[2]) / (4.0 * cellvolume)
@@ -296,8 +285,8 @@ class GeometryLoweringApplier(MultiFunction):
             edges = CellEdgeVectors(domain)
             num_edges = edges.ufl_shape[0]
             j = Index()
-            elen2 = [edges[e, j] * edges[e, j] for e in range(num_edges)]
-            return sqrt(reduce(reduction_op, elen2))
+            elen2 = [real(edges[e, j] * conj(edges[e, j])) for e in range(num_edges)]
+            return real(sqrt(reduce(reduction_op, elen2)))
 
     @memoized_handler
     def cell_diameter(self, o):
@@ -306,7 +295,7 @@ class GeometryLoweringApplier(MultiFunction):
 
         domain = o.ufl_domain()
 
-        if not domain.ufl_coordinate_element().degree() == 1:
+        if not domain.ufl_coordinate_element().degree() in {1, (1, 1)}:
             # Don't lower bendy cells, instead leave it to form compiler
             warning("Only know how to compute cell diameter of P1 or Q1 cell.")
             return o
@@ -320,8 +309,8 @@ class GeometryLoweringApplier(MultiFunction):
             verts = CellVertices(domain)
             verts = [verts[v, ...] for v in range(verts.ufl_shape[0])]
             j = Index()
-            elen2 = ((v0 - v1)[j] * (v0 - v1)[j] for v0, v1 in combinations(verts, 2))
-            return sqrt(reduce(max_value, elen2))
+            elen2 = (real((v0 - v1)[j] * conj((v0 - v1)[j])) for v0, v1 in combinations(verts, 2))
+            return real(sqrt(reduce(max_value, elen2)))
 
     @memoized_handler
     def max_facet_edge_length(self, o):
@@ -350,8 +339,8 @@ class GeometryLoweringApplier(MultiFunction):
             edges = FacetEdgeVectors(domain)
             num_edges = edges.ufl_shape[0]
             j = Index()
-            elen2 = [edges[e, j] * edges[e, j] for e in range(num_edges)]
-            return sqrt(reduce(reduction_op, elen2))
+            elen2 = [real(edges[e, j] * conj(edges[e, j])) for e in range(num_edges)]
+            return real(sqrt(reduce(reduction_op, elen2)))
 
     @memoized_handler
     def cell_normal(self, o):

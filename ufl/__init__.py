@@ -53,6 +53,8 @@ A very brief overview of the language contents follows:
     - tetrahedron
     - quadrilateral
     - hexahedron
+    - prism
+    - pyramid
 
 * Domains::
 
@@ -88,6 +90,7 @@ A very brief overview of the language contents follows:
 * Function spaces::
 
     - FunctionSpace
+    - MixedFunctionSpace
 
 * Arguments::
 
@@ -225,20 +228,9 @@ A very brief overview of the language contents follows:
 
 # Copyright (C) 2008-2016 Martin Sandve Alnæs and Anders Logg
 #
-# This file is part of UFL.
+# This file is part of UFL (https://www.fenicsproject.org)
 #
-# UFL is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFL is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFL. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 #
 # Modified by Kristian B. Oelgaard, 2009, 2011
 # Modified by Anders Logg, 2009.
@@ -246,6 +238,7 @@ A very brief overview of the language contents follows:
 # Modified by Andrew T. T. McRae, 2014
 # Modified by Lawrence Mitchell, 2014
 # Modified by Massimiliano Leoni, 2016
+# Modified by Cecile Daversin-Catty, 2018
 
 import pkg_resources
 
@@ -286,7 +279,7 @@ from ufl.finiteelement import FiniteElementBase, FiniteElement, \
     MixedElement, VectorElement, TensorElement, EnrichedElement, \
     NodalEnrichedElement, RestrictedElement, TensorProductElement, \
     HDivElement, HCurlElement, BrokenElement, \
-    FacetElement, InteriorElement
+    FacetElement, InteriorElement, WithMapping
 
 # Hook to extend predefined element families
 from ufl.finiteelement.elementlist import register_element, show_elements  # , ufl_elements
@@ -299,8 +292,8 @@ from ufl.argument import Argument, TestFunction, TrialFunction, \
     Arguments, TestFunctions, TrialFunctions
 
 # Coefficients
-from ufl.coefficient import Coefficient, Coefficients, \
-    Constant, VectorConstant, TensorConstant
+from ufl.coefficient import Coefficient, Coefficients
+from ufl.constant import Constant, VectorConstant, TensorConstant
 
 # Split function
 from ufl.split_functions import split
@@ -353,12 +346,12 @@ import ufl.measureoperators as __measureoperators
 
 # Representations of transformed forms
 from ufl.formoperators import replace, derivative, action, energy_norm, rhs, lhs,\
-    system, functional, adjoint, sensitivity_rhs, block_split  # , dirichlet_functional
+system, functional, adjoint, sensitivity_rhs, extract_blocks #, dirichlet_functional
 
 # Predefined convenience objects
 from ufl.objects import (
     vertex, interval, triangle, tetrahedron,
-    quadrilateral, hexahedron, facet,
+    quadrilateral, hexahedron, prism, pyramid, facet,
     i, j, k, l, p, q, r, s,
     dx, ds, dS, dP,
     dc, dC, dO, dI, dX,
@@ -370,8 +363,7 @@ from math import e, pi
 
 
 # Define ufl.* namespace
-from ufl.utils.str import as_native_strings
-__all__ = as_native_strings([
+__all__ = [
     'product',
     'get_handler', 'get_logger', 'set_handler', 'set_level', 'add_logfile',
     'UFLException', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL',
@@ -388,9 +380,9 @@ __all__ = as_native_strings([
     'MixedElement', 'VectorElement', 'TensorElement', 'EnrichedElement',
     'NodalEnrichedElement', 'RestrictedElement', 'TensorProductElement',
     'HDivElement', 'HCurlElement',
-    'BrokenElement', 'FacetElement', 'InteriorElement',
+    'BrokenElement', 'FacetElement', 'InteriorElement', "WithMapping",
     'register_element', 'show_elements',
-    'FunctionSpace',
+    'FunctionSpace', 'MixedFunctionSpace',
     'Argument', 'TestFunction', 'TrialFunction',
     'Arguments', 'TestFunctions', 'TrialFunctions',
     'Coefficient', 'Coefficients',
@@ -417,13 +409,14 @@ __all__ = as_native_strings([
     'elem_mult', 'elem_div', 'elem_pow', 'elem_op',
     'Form',
     'Integral', 'Measure', 'register_integral_type', 'integral_types', 'custom_integral_types',
-    'replace', 'replace_integral_domains', 'derivative', 'action', 'energy_norm', 'rhs', 'lhs', 'block_split',
+    'replace', 'replace_integral_domains', 'derivative', 'action', 'energy_norm', 'rhs', 'lhs', 'extract_blocks',
     'system', 'functional', 'adjoint', 'sensitivity_rhs',
     'dx', 'ds', 'dS', 'dP',
     'dc', 'dC', 'dO', 'dI', 'dX',
     'ds_b', 'ds_t', 'ds_tb', 'ds_v', 'dS_h', 'dS_v',
     'vertex', 'interval', 'triangle', 'tetrahedron',
+    'prism', 'pyramid',
     'quadrilateral', 'hexahedron', 'facet',
     'i', 'j', 'k', 'l', 'p', 'q', 'r', 's',
     'e', 'pi',
-])
+]

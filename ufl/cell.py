@@ -3,20 +3,9 @@
 
 # Copyright (C) 2008-2016 Martin Sandve Alnæs
 #
-# This file is part of UFL.
+# This file is part of UFL (https://www.fenicsproject.org)
 #
-# UFL is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFL is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFL. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 #
 # Modified by Anders Logg, 2009.
 # Modified by Kristian B. Oelgaard, 2009
@@ -27,14 +16,13 @@
 import numbers
 import functools
 
-from ufl.utils.str import as_native_str
-from ufl.utils.str import as_native_strings
+import ufl.cell
 from ufl.log import error
 from ufl.core.ufl_type import attach_operators_from_hash_data
 
 
 # Export list for ufl.classes
-__all_classes__ = as_native_strings(["AbstractCell", "Cell", "TensorProductCell"])
+__all_classes__ = ["AbstractCell", "Cell", "TensorProductCell"]
 
 
 # --- The most abstract cell class, base class for other cell types
@@ -44,8 +32,8 @@ class AbstractCell(object):
     dimensions known.
 
     """
-    __slots__ = as_native_strings(("_topological_dimension",
-                                   "_geometric_dimension"))
+    __slots__ = ("_topological_dimension",
+                 "_geometric_dimension")
 
     def __init__(self, topological_dimension, geometric_dimension):
         # Validate dimensions
@@ -98,19 +86,12 @@ num_cell_entities = {"vertex": (1,),
                      "triangle": (3, 3, 1),
                      "quadrilateral": (4, 4, 1),
                      "tetrahedron": (4, 6, 4, 1),
+                     "prism": (6, 9, 5, 1),
+                     "pyramid": (5, 8, 5, 1),
                      "hexahedron": (8, 12, 6, 1)}
 
 # Mapping from cell name to topological dimension
 cellname2dim = dict((k, len(v) - 1) for k, v in num_cell_entities.items())
-
-# Mapping from cell name to facet name
-# Note: This is not generalizable to product elements but it's still
-# in use a couple of places.
-cellname2facetname = {"interval": "vertex",
-                      "triangle": "interval",
-                      "quadrilateral": "interval",
-                      "tetrahedron": "triangle",
-                      "hexahedron": "quadrilateral"}
 
 
 # --- Basic cell representation classes
@@ -118,7 +99,7 @@ cellname2facetname = {"interval": "vertex",
 @attach_operators_from_hash_data
 class Cell(AbstractCell):
     "Representation of a named finite element cell with known structure."
-    __slots__ = as_native_strings(("_cellname",))
+    __slots__ = ("_cellname",)
 
     def __init__(self, cellname, geometric_dimension=None):
         "Initialize basic cell description."
@@ -175,11 +156,17 @@ class Cell(AbstractCell):
 
     # --- Facet properties ---
 
-    def num_facet_edges(self):
-        "The number of facet edges."
-        # This is used in geometry.py
-        fn = cellname2facetname[self.cellname()]
-        return num_cell_entities[fn][1]
+    def facet_types(self):
+        "A tuple of ufl.Cell representing the facets of self."
+        # TODO Move outside method?
+        facet_type_names = {"interval": ("vertex",),
+                            "triangle": ("interval",),
+                            "quadrilateral": ("interval",),
+                            "tetrahedron": ("triangle",),
+                            "hexahedron": ("quadrilateral",),
+                            "prism": ("triangle", "quadrilateral")}
+        return tuple(ufl.Cell(facet_name, self.geometric_dimension())
+                     for facet_name in facet_type_names[self.cellname()])
 
     # --- Special functions for proper object behaviour ---
 
@@ -202,7 +189,7 @@ class Cell(AbstractCell):
             r = name
         else:
             r = "Cell(%s, %s)" % (repr(name), repr(gdim))
-        return as_native_str(r)
+        return r
 
     def _ufl_hash_data_(self):
         return (self._geometric_dimension, self._topological_dimension,
@@ -211,7 +198,7 @@ class Cell(AbstractCell):
 
 @attach_operators_from_hash_data
 class TensorProductCell(AbstractCell):
-    __slots__ = as_native_strings(("_cells",))
+    __slots__ = ("_cells",)
 
     def __init__(self, *cells, **kwargs):
         keywords = list(kwargs.keys())

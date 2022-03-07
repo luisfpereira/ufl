@@ -3,20 +3,9 @@
 
 # Copyright (C) 2008-2016 Martin Sandve Alnæs
 #
-# This file is part of UFL.
+# This file is part of UFL (https://www.fenicsproject.org)
 #
-# UFL is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFL is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFL. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 
 
 from ufl.log import error
@@ -32,6 +21,9 @@ class RestrictionPropagator(MultiFunction):
         MultiFunction.__init__(self)
         self.current_restriction = side
         self.default_restriction = "+"
+        # Caches for propagating the restriction with map_expr_dag
+        self.vcaches = {"+": {}, "-": {}}
+        self.rcaches = {"+": {}, "-": {}}
         if self.current_restriction is None:
             self._rp = {"+": RestrictionPropagator("+"),
                         "-": RestrictionPropagator("-")}
@@ -43,8 +35,10 @@ class RestrictionPropagator(MultiFunction):
         if self.current_restriction is not None:
             error("Cannot restrict an expression twice.")
         # Configure a propagator for this side and apply to subtree
-        # FIXME: Reuse cache between these calls!
-        return map_expr_dag(self._rp[o.side()], o.ufl_operands[0])
+        side = o.side()
+        return map_expr_dag(self._rp[side], o.ufl_operands[0],
+                            vcache=self.vcaches[side],
+                            rcache=self.rcaches[side])
 
     # --- Reusable rules
 
@@ -113,6 +107,7 @@ class RestrictionPropagator(MultiFunction):
 
     # Default: Literals should ignore restriction
     constant_value = _ignore_restriction
+    constant = _ignore_restriction
 
     # Even arguments with continuous elements such as Lagrange must be
     # restricted to associate with the right part of the element
@@ -137,7 +132,8 @@ class RestrictionPropagator(MultiFunction):
         d = e.degree()
         f = e.family()
         # TODO: Move this choice to the element class?
-        if (f == "Lagrange" and d > 0) or f == "Real":
+        continuous_families = ["Lagrange", "Q", "S"]
+        if (f in continuous_families and d > 0) or f == "Real":
             # If the coefficient _value_ is _fully_ continuous
             return self._default_restricted(o)  # Must still be computed from one of the sides, we just don't care which
         else:

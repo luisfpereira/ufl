@@ -3,28 +3,17 @@
 
 # Copyright (C) 2008-2016 Martin Sandve Alnæs
 #
-# This file is part of UFL.
+# This file is part of UFL (https://www.fenicsproject.org)
 #
-# UFL is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFL is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFL. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 #
 # Modified by Anders Logg 2008-2016
 # Modified by Massimiliano Leoni, 2016.
 
 import numbers
 
-from ufl.utils.str import as_native_strings
-from ufl.utils.str import as_native_str
+from itertools import chain
+
 from ufl.log import error, deprecate
 from ufl.core.expr import Expr
 from ufl.checks import is_true_ufl_scalar
@@ -35,7 +24,7 @@ from ufl.protocols import id_or_none, metadata_equal, metadata_hashdata
 
 
 # Export list for ufl.classes
-__all_classes__ = as_native_strings(["Measure", "MeasureSum", "MeasureProduct"])
+__all_classes__ = ["Measure", "MeasureSum", "MeasureProduct"]
 
 
 # TODO: Design a class IntegralType(name, shortname, codim, num_cells, ...)?
@@ -111,11 +100,11 @@ def measure_names():
 
 
 class Measure(object):
-    __slots__ = as_native_strings(("_integral_type",
-                                   "_domain",
-                                   "_subdomain_id",
-                                   "_metadata",
-                                   "_subdomain_data"))
+    __slots__ = ("_integral_type",
+                 "_domain",
+                 "_subdomain_id",
+                 "_metadata",
+                 "_subdomain_data")
     """Representation of an integration measure.
 
     The Measure object holds information about integration properties
@@ -218,6 +207,7 @@ class Measure(object):
         new values.
 
         Example:
+        -------
             <dm = Measure instance>
             b = dm.reconstruct(subdomain_id=2)
             c = dm.reconstruct(metadata={ "quadrature_degree": 3 })
@@ -339,7 +329,7 @@ class Measure(object):
             args.append("subdomain_data=%s" % repr(self._subdomain_data))
 
         r = "%s(%s)" % (type(self).__name__, ', '.join(args))
-        return as_native_str(r)
+        return r
 
     def __hash__(self):
         "Return a hash value for this Measure."
@@ -419,11 +409,12 @@ class Measure(object):
                   "tensor expression with value shape %s and free indices with labels %s." %
                   (integrand.ufl_shape, integrand.ufl_free_indices))
 
-        # If we have a tuple of domain ids, delegate composition to
-        # Integral.__add__:
+        # If we have a tuple of domain ids build the integrals one by
+        # one and construct as a Form in one go.
         subdomain_id = self.subdomain_id()
         if isinstance(subdomain_id, tuple):
-            return sum(integrand * self.reconstruct(subdomain_id=d) for d in subdomain_id)
+            return Form(list(chain(*((integrand * self.reconstruct(subdomain_id=d)).integrals()
+                                     for d in subdomain_id))))
 
         # Check that we have an integer subdomain or a string
         # ("everywhere" or "otherwise", any more?)
@@ -463,7 +454,7 @@ class MeasureSum(object):
 
         f*ds(1) + f*ds(3)
     """
-    __slots__ = as_native_strings(("_measures",))
+    __slots__ = ("_measures",)
 
     def __init__(self, *measures):
         self._measures = measures
@@ -494,7 +485,7 @@ class MeasureProduct(object):
     in other parts of ufl and the rest of the code generation chain.
 
     """
-    __slots__ = as_native_strings(("_measures",))
+    __slots__ = ("_measures",)
 
     def __init__(self, *measures):
         "Create MeasureProduct from given list of measures."

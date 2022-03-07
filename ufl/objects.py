@@ -3,20 +3,9 @@
 
 # Copyright (C) 2008-2016 Martin Sandve Alnæs
 #
-# This file is part of UFL.
+# This file is part of UFL (https://www.fenicsproject.org)
 #
-# UFL is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# UFL is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with UFL. If not, see <http://www.gnu.org/licenses/>.
+# SPDX-License-Identifier:    LGPL-3.0-or-later
 #
 # Modified by Anders Logg, 2008
 # Modified by Kristian Oelgaard, 2009
@@ -44,6 +33,8 @@ vertex = Cell("vertex", 0)
 interval = Cell("interval", 1)
 triangle = Cell("triangle", 2)
 tetrahedron = Cell("tetrahedron", 3)
+prism = Cell("prism", 3)
+pyramid = Cell("pyramid", 3)
 quadrilateral = Cell("quadrilateral", 2)
 hexahedron = Cell("hexahedron", 3)
 
